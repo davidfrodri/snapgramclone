@@ -1,7 +1,7 @@
 import { ID } from 'appwrite'
 
 import { INewUser } from "@/types";
-import { account } from './config';
+import { account, appwriteConfig, avatars, databases } from './config';
 
 export async function createUserAcount(user: INewUser) {
   try {
@@ -10,11 +10,45 @@ export async function createUserAcount(user: INewUser) {
       user.email,
       user.password,
       user.name,
-    )
-    return newAccount;
+    );
+
+    if(!newAccount) throw new Error;
+
+    const avatarUrl = avatars.getInitials(user.name);
+
+    const newUser = await saveUserToDB({
+      accountId: newAccount.$id,
+      email: newAccount.email,
+      name: newAccount.name,
+      username: user.username,
+      imageUrl: avatarUrl
+    });
+
+    return newUser;
 
   } catch (error) {
     console.log(error)
     return error;
+  }
+}
+
+export async function saveUserToDB (user: {
+  accountId: string;
+  email: string;
+  name: string;
+  imageUrl: URL;
+  username?: string;
+}) {
+  try {
+    const newUser = await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      ID.unique(),
+      user,
+    );
+
+    return newUser;
+  } catch (error) {
+      console.log(error)
   }
 }
